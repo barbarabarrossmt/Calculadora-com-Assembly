@@ -1,277 +1,466 @@
-section .data
-    ; Mensagens do programa
-    msg_menu      db 10, '=== CALCULADORA ASSEMBLY ===', 10
-                  db '1. Soma', 10
-                  db '2. Subtracao', 10
-                  db '3. Multiplicacao', 10
-                  db '4. Divisao', 10
-                  db '5. Sair', 10
-                  db 'Escolha uma opcao: ', 0
-    len_menu      equ $ - msg_menu
-    
-    msg_num1      db 10, 'Digite o primeiro numero: ', 0
-    len_num1      equ $ - msg_num1
-    
-    msg_num2      db 'Digite o segundo numero: ', 0
-    len_num2      equ $ - msg_num2
-    
-    msg_result    db 10, 'Resultado: ', 0
-    len_result    equ $ - msg_result
-    
-    msg_erro      db 10, 'Opcao invalida!', 10, 0
-    len_erro      equ $ - msg_erro
-    
-    msg_div_zero  db 10, 'Erro: Divisao por zero!', 10, 0
-    len_div_zero  equ $ - msg_div_zero
-    
-    newline       db 10, 0
-    len_newline   equ $ - newline
+/ Menu e mensagens (armazenadas como endereços)
+Menu,        HEX 0
+MsgNum1,     HEX 0
+MsgNum2,     HEX 0
+MsgResult,   HEX 0
+MsgErro,     HEX 0
+MsgDivZero,  HEX 0
 
-section .bss
-    opcao     resb 2
-    num1      resb 10
-    num2      resb 10
-    resultado resb 10
-    buffer    resb 10
+/ Variáveis do programa
+Opcao,      DEC 0
+Num1,       DEC 0
+Num2,       DEC 0
+Resultado,  DEC 0
+Temp,       DEC 0
 
-section .text
-    global _start
+/ --- Strings do Menu ---
+/ Cada string termina com 0 (null)
+MenuTxt,        DEC 10     / \n
+                 DEC 61     / =
+                 DEC 61     / =
+                 DEC 61     / =
+                 DEC 32     / espaço
+                 DEC 67     / C
+                 DEC 65     / A
+                 DEC 76     / L
+                 DEC 67     / C
+                 DEC 85     / U
+                 DEC 76     / L
+                 DEC 65     / A
+                 DEC 68     / D
+                 DEC 79     / O
+                 DEC 82     / R
+                 DEC 65     / A
+                 DEC 32     / espaço
+                 DEC 61     / =
+                 DEC 61     / =
+                 DEC 61     / =
+                 DEC 10     / \n
+                 DEC 49     / 1
+                 DEC 46     / .
+                 DEC 32     / espaço
+                 DEC 83     / S
+                 DEC 79     / O
+                 DEC 77     / M
+                 DEC 65     / A
+                 DEC 10     / \n
+                 DEC 50     / 2
+                 DEC 46     / .
+                 DEC 32     / espaço
+                 DEC 83     / S
+                 DEC 85     / U
+                 DEC 66     / B
+                 DEC 84     / T
+                 DEC 82     / R
+                 DEC 65     / A
+                 DEC 67     / C
+                 DEC 65     / A
+                 DEC 79     / O
+                 DEC 10     / \n
+                 DEC 51     / 3
+                 DEC 46     / .
+                 DEC 32     / espaço
+                 DEC 77     / M
+                 DEC 85     / U
+                 DEC 76     / L
+                 DEC 84     / T
+                 DEC 73     / I
+                 DEC 80     / P
+                 DEC 76     / L
+                 DEC 73     / I
+                 DEC 67     / C
+                 DEC 65     / A
+                 DEC 67     / C
+                 DEC 65     / A
+                 DEC 79     / O
+                 DEC 10     / \n
+                 DEC 52     / 4
+                 DEC 46     / .
+                 DEC 32     / espaço
+                 DEC 68     / D
+                 DEC 73     / I
+                 DEC 86     / V
+                 DEC 73     / I
+                 DEC 83     / S
+                 DEC 65     / A
+                 DEC 79     / O
+                 DEC 10     / \n
+                 DEC 53     / 5
+                 DEC 46     / .
+                 DEC 32     / espaço
+                 DEC 83     / S
+                 DEC 65     / A
+                 DEC 73     / I
+                 DEC 82     / R
+                 DEC 10     / \n
+                 DEC 69     / E
+                 DEC 115    / s
+                 DEC 99     / c
+                 DEC 111    / o
+                 DEC 108    / l
+                 DEC 104    / h
+                 DEC 97     / a
+                 DEC 32     / espaço
+                 DEC 117    / u
+                 DEC 109    / m
+                 DEC 97     / a
+                 DEC 32     / espaço
+                 DEC 111    / o
+                 DEC 112    / p
+                 DEC 99     / c
+                 DEC 97     / a
+                 DEC 111    / o
+                 DEC 58     / :
+                 DEC 32     / espaço
+                 DEC 0      / null terminator
 
-_start:
-    ; Loop principal do programa
-    main_loop:
-        ; Exibir menu
-        call exibir_menu
-        
-        ; Ler opção do usuário
-        mov eax, 3          ; sys_read
-        mov ebx, 0          ; stdin
-        mov ecx, opcao      ; buffer
-        mov edx, 2          ; tamanho
-        int 0x80
-        
-        ; Verificar se quer sair
-        cmp byte [opcao], '5'
-        je sair
-        
-        ; Validar opção
-        cmp byte [opcao], '1'
-        jb opcao_invalida
-        cmp byte [opcao], '4'
-        ja opcao_invalida
-        
-        ; Ler números
-        call ler_numeros
-        
-        ; Executar operação baseada na opção
-        cmp byte [opcao], '1'
-        je somar
-        cmp byte [opcao], '2'
-        je subtrair
-        cmp byte [opcao], '3'
-        je multiplicar
-        cmp byte [opcao], '4'
-        je dividir
-        
-    jmp main_loop
+MsgNum1Txt,     DEC 10     / \n
+                 DEC 68     / D
+                 DEC 105    / i
+                 DEC 103    / g
+                 DEC 105    / i
+                 DEC 116    / t
+                 DEC 101    / e
+                 DEC 32     / espaço
+                 DEC 111    / o
+                 DEC 32     / espaço
+                 DEC 112    / p
+                 DEC 114    / r
+                 DEC 105    / i
+                 DEC 109    / m
+                 DEC 101    / e
+                 DEC 105    / i
+                 DEC 114    / r
+                 DEC 111    / o
+                 DEC 32     / espaço
+                 DEC 110    / n
+                 DEC 117    / u
+                 DEC 109    / m
+                 DEC 101    / e
+                 DEC 114    / r
+                 DEC 111    / o
+                 DEC 58     / :
+                 DEC 32     / espaço
+                 DEC 0      / null terminator
 
-; Sub-rotina para exibir menu
-exibir_menu:
-    mov eax, 4          ; sys_write
-    mov ebx, 1          ; stdout
-    mov ecx, msg_menu
-    mov edx, len_menu
-    int 0x80
-    ret
+MsgNum2Txt,     DEC 68     / D
+                 DEC 105    / i
+                 DEC 103    / g
+                 DEC 105    / i
+                 DEC 116    / t
+                 DEC 101    / e
+                 DEC 32     / espaço
+                 DEC 111    / o
+                 DEC 32     / espaço
+                 DEC 115    / s
+                 DEC 101    / e
+                 DEC 103    / g
+                 DEC 117    / u
+                 DEC 110    / n
+                 DEC 100    / d
+                 DEC 111    / o
+                 DEC 32     / espaço
+                 DEC 110    / n
+                 DEC 117    / u
+                 DEC 109    / m
+                 DEC 101    / e
+                 DEC 114    / r
+                 DEC 111    / o
+                 DEC 58     / :
+                 DEC 32     / espaço
+                 DEC 0      / null terminator
 
-; Sub-rotina para ler números
-ler_numeros:
-    ; Pedir primeiro número
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, msg_num1
-    mov edx, len_num1
-    int 0x80
-    
-    ; Ler primeiro número
-    mov eax, 3
-    mov ebx, 0
-    mov ecx, num1
-    mov edx, 10
-    int 0x80
-    
-    ; Pedir segundo número
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, msg_num2
-    mov edx, len_num2
-    int 0x80
-    
-    ; Ler segundo número
-    mov eax, 3
-    mov ebx, 0
-    mov ecx, num2
-    mov edx, 10
-    int 0x80
-    
-    ; Converter strings para inteiros
-    mov esi, num1
-    call string_para_int
-    mov ebx, eax        ; guardar num1 em ebx
-    
-    mov esi, num2
-    call string_para_int
-    mov ecx, eax        ; guardar num2 em ecx
-    
-    ret
+MsgResultTxt,   DEC 10     / \n
+                 DEC 82     / R
+                 DEC 101    / e
+                 DEC 115    / s
+                 DEC 117    / u
+                 DEC 108    / l
+                 DEC 116    / t
+                 DEC 97     / a
+                 DEC 100    / d
+                 DEC 111    / o
+                 DEC 58     / :
+                 DEC 32     / espaço
+                 DEC 0      / null terminator
 
-; Operação de soma
-somar:
-    add ebx, ecx        ; ebx = ebx + ecx
-    mov eax, ebx
-    call exibir_resultado
-    jmp main_loop
+MsgErroTxt,     DEC 10     / \n
+                 DEC 79     / O
+                 DEC 112    / p
+                 DEC 99     / c
+                 DEC 97     / a
+                 DEC 111    / o
+                 DEC 32     / espaço
+                 DEC 105    / i
+                 DEC 110    / n
+                 DEC 118    / v
+                 DEC 97     / a
+                 DEC 108    / l
+                 DEC 105    / i
+                 DEC 100    / d
+                 DEC 97     / a
+                 DEC 33     / !
+                 DEC 10     / \n
+                 DEC 0      / null terminator
 
-; Operação de subtração
-subtrair:
-    sub ebx, ecx        ; ebx = ebx - ecx
-    mov eax, ebx
-    call exibir_resultado
-    jmp main_loop
+MsgDivZeroTxt,  DEC 10     / \n
+                 DEC 69     / E
+                 DEC 114    / r
+                 DEC 114    / r
+                 DEC 111    / o
+                 DEC 58     / :
+                 DEC 32     / espaço
+                 DEC 68     / D
+                 DEC 105    / i
+                 DEC 118    / v
+                 DEC 105    / i
+                 DEC 115    / s
+                 DEC 97     / a
+                 DEC 111    / o
+                 DEC 32     / espaço
+                 DEC 112    / p
+                 DEC 111    / o
+                 DEC 114    / r
+                 DEC 32     / espaço
+                 DEC 122    / z
+                 DEC 101    / e
+                 DEC 114    / r
+                 DEC 111    / o
+                 DEC 33     / !
+                 DEC 10     / \n
+                 DEC 0      / null terminator
 
-; Operação de multiplicação
-multiplicar:
-    mov eax, ebx
-    imul eax, ecx       ; eax = ebx * ecx
-    call exibir_resultado
-    jmp main_loop
+NewLine,        DEC 10     / \n
+                 DEC 0      / null terminator
 
-; Operação de divisão
-dividir:
-    ; Verificar divisão por zero
-    cmp ecx, 0
-    je erro_div_zero
-    
-    mov eax, ebx
-    cdq                 ; estender sinal para edx
-    idiv ecx            ; eax = ebx / ecx
-    call exibir_resultado
-    jmp main_loop
+/ --- Programa Principal ---
+Start,          Load MenuTxt
+                 Store Menu
+                 Load MsgNum1Txt
+                 Store MsgNum1
+                 Load MsgNum2Txt
+                 Store MsgNum2
+                 Load MsgResultTxt
+                 Store MsgResult
+                 Load MsgErroTxt
+                 Store MsgErro
+                 Load MsgDivZeroTxt
+                 Store MsgDivZero
 
-; Sub-rotina para exibir resultado
-exibir_resultado:
-    push eax
-    ; Exibir mensagem de resultado
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, msg_result
-    mov edx, len_result
-    int 0x80
-    pop eax
-    
-    ; Converter inteiro para string e exibir
-    call int_para_string
-    mov edx, eax        ; edx = tamanho da string
-    mov eax, 4          ; sys_write
-    mov ebx, 1          ; stdout
-    mov ecx, buffer     ; buffer com o número
-    int 0x80
-    
-    ; Nova linha
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, newline
-    mov edx, len_newline
-    int 0x80
-    
-    ret
+MainLoop,       JnS ExibirMenu    / Exibir menu
+                 JnS LerOpcao      / Ler opção do usuário
+                 
+                 / Verificar se é sair (opção 5)
+                 Load Opcao
+                 Subt Cinco
+                 Skipcond 400      / Se zero, pular próxima instrução
+                 Jump VerificaOpcoes
+                 Jump Sair
+                 
+VerificaOpcoes, Load Opcao
+                 Subt Um
+                 Skipcond 400      / Se zero, é opção 1
+                 Jump CheckOp2
+                 Jump LerNumerosSoma
+                 
+CheckOp2,       Load Opcao
+                 Subt Dois
+                 Skipcond 400      / Se zero, é opção 2
+                 Jump CheckOp3
+                 Jump LerNumerosSub
+                 
+CheckOp3,       Load Opcao
+                 Subt Tres
+                 Skipcond 400      / Se zero, é opção 3
+                 Jump CheckOp4
+                 Jump LerNumerosMult
+                 
+CheckOp4,       Load Opcao
+                 Subt Quatro
+                 Skipcond 400      / Se zero, é opção 4
+                 Jump OpcaoInvalida / Se chegou aqui, opção inválida
+                 Jump LerNumerosDiv
 
-; Converter string para inteiro
-; Entrada: ESI = ponteiro para string
-; Saída: EAX = inteiro
-string_para_int:
-    xor eax, eax        ; zerar eax
-    xor ebx, ebx        ; zerar ebx
-    
-    .loop:
-        mov bl, [esi]   ; pegar caractere
-        cmp bl, 10      ; verificar newline
-        je .fim
-        cmp bl, 0       ; verificar null
-        je .fim
-        
-        sub bl, '0'     ; converter ASCII para número
-        imul eax, 10    ; eax *= 10
-        add eax, ebx    ; eax += dígito
-        
-        inc esi         ; próximo caractere
-        jmp .loop
-    
-    .fim:
-    ret
+/ --- Fluxos das operações ---
+LerNumerosSoma, JnS LerNumeros
+                 JnS Somar
+                 Jump MainLoop
+                 
+LerNumerosSub,  JnS LerNumeros
+                 JnS Subtrair
+                 Jump MainLoop
+                 
+LerNumerosMult, JnS LerNumeros
+                 JnS Multiplicar
+                 Jump MainLoop
+                 
+LerNumerosDiv,  JnS LerNumeros
+                 JnS Dividir
+                 Jump MainLoop
 
-; Converter inteiro para string
-; Entrada: EAX = inteiro
-; Saída: EAX = tamanho da string, buffer preenchido
-int_para_string:
-    mov edi, buffer + 9 ; apontar para final do buffer
-    mov byte [edi], 0   ; null terminator
-    mov ebx, 10         ; divisor
-    
-    ; Verificar se é negativo
-    test eax, eax
-    jns .positivo
-    neg eax             ; tornar positivo
-    mov byte [buffer], '-' ; sinal negativo
-    jmp .loop
-    
-    .positivo:
-    mov byte [buffer], '+' ; sinal positivo
-    
-    .loop:
-        dec edi
-        xor edx, edx    ; zerar edx
-        div ebx         ; eax = quociente, edx = resto
-        add dl, '0'     ; converter para ASCII
-        mov [edi], dl   ; armazenar caractere
-        
-        test eax, eax   ; verificar se terminou
-        jnz .loop
-    
-    ; Calcular tamanho
-    mov eax, buffer + 10
-    sub eax, edi        ; eax = tamanho
-    
-    ; Mover string para início do buffer se necessário
-    push eax
-    mov esi, edi
-    mov edi, buffer + 1 ; pular o sinal
-    mov ecx, eax
-    rep movsb
-    pop eax
-    
-    inc eax             ; incluir o sinal no tamanho
-    ret
+/ --- Sub-rotinas ---
 
-; Tratamento de erros
-opcao_invalida:
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, msg_erro
-    mov edx, len_erro
-    int 0x80
-    jmp main_loop
+/ Exibir Menu
+ExibirMenu,     HEX 0
+                 Load Menu         / Carregar endereço do menu
+                 Store PrintAddr   / Armazenar para impressão
+                 JnS PrintString   / Chamar sub-rotina de impressão
+                 JumpI ExibirMenu
 
-erro_div_zero:
-    mov eax, 4
-    mov ebx, 1
-    mov ecx, msg_div_zero
-    mov edx, len_div_zero
-    int 0x80
-    jmp main_loop
+/ Ler Opção
+LerOpcao,       HEX 0
+                 Input             / Ler caractere
+                 Store Opcao
+                 Subt AsciiOffset  / Converter ASCII para número
+                 Store Opcao
+                 
+                 / Limpar buffer de entrada (ler newline)
+                 Input
+                 
+                 JumpI LerOpcao
 
-; Sair do programa
-sair:
-    mov eax, 1          ; sys_exit
-    mov ebx, 0          ; status 0
-    int 0x80
+/ Ler Números
+LerNumeros,     HEX 0
+                 / Pedir primeiro número
+                 Load MsgNum1
+                 Store PrintAddr
+                 JnS PrintString
+                 
+                 / Ler primeiro número
+                 Input
+                 Store Num1
+                 
+                 / Pedir segundo número
+                 Load MsgNum2
+                 Store PrintAddr
+                 JnS PrintString
+                 
+                 / Ler segundo número
+                 Input
+                 Store Num2
+                 
+                 JumpI LerNumeros
+
+/ Operação de Soma
+Somar,          HEX 0
+                 Load Num1
+                 Add Num2
+                 Store Resultado
+                 JnS ExibirResultado
+                 JumpI Somar
+
+/ Operação de Subtração
+Subtrair,       HEX 0
+                 Load Num1
+                 Subt Num2
+                 Store Resultado
+                 JnS ExibirResultado
+                 JumpI Subtrair
+
+/ Operação de Multiplicação
+Multiplicar,    HEX 0
+                 Load Zero
+                 Store Resultado
+                 
+MultiLoop,      Load Num2
+                 Skipcond 400      / Se zero, terminar
+                 Jump MultiFim
+                 
+                 Load Resultado
+                 Add Num1
+                 Store Resultado
+                 
+                 Load Num2
+                 Subt Um
+                 Store Num2
+                 
+                 Jump MultiLoop
+                 
+MultiFim,       JnS ExibirResultado
+                 JumpI Multiplicar
+
+/ Operação de Divisão
+Dividir,        HEX 0
+                 Load Num2
+                 Skipcond 400      / Se zero, erro divisão por zero
+                 Jump DivContinua
+                 Jump DivZeroErro
+                 
+DivContinua,    Load Zero
+                 Store Resultado
+                 
+DivLoop,        Load Num1
+                 Subt Num2
+                 Skipcond 800      / Se negativo, terminar
+                 Jump DivFim
+                 
+                 Store Num1
+                 Load Resultado
+                 Add Um
+                 Store Resultado
+                 
+                 Jump DivLoop
+                 
+DivFim,         JnS ExibirResultado
+                 JumpI Dividir
+
+/ Exibir Resultado
+ExibirResultado, HEX 0
+                 Load MsgResult
+                 Store PrintAddr
+                 JnS PrintString
+                 
+                 / Converter número para ASCII e exibir
+                 Load Resultado
+                 Add AsciiOffset
+                 Output
+                 
+                 / Nova linha
+                 Load NewLine
+                 Store PrintAddr
+                 JnS PrintString
+                 
+                 JumpI ExibirResultado
+
+/ Sub-rotina para imprimir string
+PrintString,    HEX 0
+                 LoadI PrintAddr   / Carregar caractere atual
+                 Skipcond 400      / Se zero, terminar
+                 Jump PrintFim
+                 
+                 Output            / Imprimir caractere
+                 
+                 / Próximo caractere
+                 Load PrintAddr
+                 Add Um
+                 Store PrintAddr
+                 
+                 Jump PrintString
+                 
+PrintFim,       JumpI PrintString
+
+/ Tratamento de erros
+OpcaoInvalida,  Load MsgErro
+                 Store PrintAddr
+                 JnS PrintString
+                 Jump MainLoop
+
+DivZeroErro,    Load MsgDivZero
+                 Store PrintAddr
+                 JnS PrintString
+                 Jump MainLoop
+
+/ --- Sair do programa ---
+Sair,           Halt
+
+/ --- Variáveis da sub-rotina de impressão ---
+PrintAddr,      DEC 0
+
+/ --- Constantes numéricas ---
+Zero,           DEC 0
+Um,             DEC 1
+Dois,           DEC 2
+Tres,           DEC 3
+Quatro,         DEC 4
+Cinco,          DEC 5
+AsciiOffset,    DEC 48    / Para converter entre número e ASCII ('0' = 48)
